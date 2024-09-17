@@ -1,24 +1,33 @@
-from books.recommendation import get_book_recommendations
-from rest_framework import viewsets, status
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly
-from rest_framework.decorators import action
-from django.db.models import Q
-from django.contrib.postgres.search import SearchQuery, SearchRank,SearchVector
-from drf_spectacular.utils import extend_schema, OpenApiParameter
-from .models import Author, Book, Favorite, Work, Shelf
-from .serializers import AuthorSerializer, BookSerializer, FavoriteSerializer, WorkSerializer, ShelfSerializer
+# views.py
 
+from rest_framework import viewsets, mixins, status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from django.db.models import Q
+from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-
-
+from .models import Author, Book, Favorite, Work, Shelf
+from .serializers import AuthorSerializer, BookSerializer, FavoriteSerializer, WorkSerializer, ShelfSerializer
 from .recommendation import get_book_recommendations
-class AuthorViewSet(viewsets.ModelViewSet):
+
+class CustomMixin(mixins.CreateModelMixin,
+                  mixins.RetrieveModelMixin,
+                  mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin,
+                  mixins.ListModelMixin):
+    """
+    Custom mixin that includes all ModelViewSet mixins except PartialUpdateModelMixin.
+    This excludes the PATCH method.
+    """
+    pass
+
+class AuthorViewSet(CustomMixin, viewsets.GenericViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(description="List all authors")
     def list(self, request, *args, **kwargs):
@@ -40,10 +49,10 @@ class AuthorViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         return super().destroy(request, *args, **kwargs)
 
-class BookViewSet(viewsets.ModelViewSet):
+class BookViewSet(CustomMixin, viewsets.GenericViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     @extend_schema(description="List all books")
     def list(self, request, *args, **kwargs):
@@ -109,19 +118,18 @@ class BookViewSet(viewsets.ModelViewSet):
             # Log the error for debugging
             print(f"Search error: {str(e)}")
             return Response({"error": "An error occurred during search."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
 
-class WorkViewSet(viewsets.ModelViewSet):
+class WorkViewSet(CustomMixin, viewsets.GenericViewSet):
     queryset = Work.objects.all()
     serializer_class = WorkSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
-class ShelfViewSet(viewsets.ModelViewSet):
+class ShelfViewSet(CustomMixin, viewsets.GenericViewSet):
     queryset = Shelf.objects.all()
     serializer_class = ShelfSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
-class FavoriteViewSet(viewsets.ModelViewSet):
+class FavoriteViewSet(CustomMixin, viewsets.GenericViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
 
