@@ -15,7 +15,7 @@ from .recommendation import get_book_recommendations
 
 class CustomMixin(mixins.CreateModelMixin,
                   mixins.RetrieveModelMixin,
-                  mixins.UpdateModelMixin,
+                  mixins.UpdateModelMixin,   # Provides PUT
                   mixins.DestroyModelMixin,
                   mixins.ListModelMixin):
     """
@@ -28,6 +28,7 @@ class AuthorViewSet(CustomMixin, viewsets.GenericViewSet):
     queryset = Author.objects.all()
     serializer_class = AuthorSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'put', 'delete']  # Excludes PATCH
 
     @extend_schema(description="List all authors")
     def list(self, request, *args, **kwargs):
@@ -53,6 +54,7 @@ class BookViewSet(CustomMixin, viewsets.GenericViewSet):
     queryset = Book.objects.all()
     serializer_class = BookSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'put', 'delete']  # Excludes PATCH
 
     @extend_schema(description="List all books")
     def list(self, request, *args, **kwargs):
