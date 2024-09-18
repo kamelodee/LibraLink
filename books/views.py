@@ -134,6 +134,7 @@ class ShelfViewSet(CustomMixin, viewsets.GenericViewSet):
 class FavoriteViewSet(CustomMixin, viewsets.GenericViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = [IsAuthenticated]
+    http_method_names = ['get', 'post', 'delete']  # Excludes PATCH and PUT
 
     def get_queryset(self):
         return Favorite.objects.filter(user=self.request.user)

@@ -7,10 +7,11 @@ from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from .models import CustomUser
-from .serializers import CustomUserSerializer, UserLoginSerializer
+from .serializers import ChangePasswordSerializer, CustomUserSerializer, UserLoginSerializer
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 
 
 
@@ -112,13 +113,7 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         return super().update(request, *args, **kwargs)
 
-    @extend_schema(description="Partially update the logged-in user's details")
-    def partial_update(self, request, *args, **kwargs):
-        """
-        Partially update the logged-in user's details.
-        The pk parameter in the URL is ignored; it always updates the current user.
-        """
-        return super().partial_update(request, *args, **kwargs)
+   
 
     @extend_schema(description="Delete the logged-in user's account")
     def destroy(self, request, *args, **kwargs):
@@ -139,20 +134,15 @@ class UserViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     @extend_schema(description="Change the logged-in user's password")
-    @action(detail=False, methods=['post'])
+   
+    @action(detail=False, methods=['post'], permission_classes=[IsAuthenticated])
     def change_password(self, request):
-        """
-        Change the logged-in user's password.
-        """
-        user = request.user
-        serializer = self.get_serializer(data=request.data)
-
+        serializer = ChangePasswordSerializer(data=request.data)
         if serializer.is_valid():
-            if not user.check_password(serializer.validated_data['old_password']):
-                return Response({"old_password": ["Wrong password."]},
-                                status=status.HTTP_400_BAD_REQUEST)
-            user.set_password(serializer.validated_data['new_password'])
-            user.save()
-            return Response({"status": "password set"}, status=status.HTTP_200_OK)
-
+            user = request.user
+            if user.check_password(serializer.validated_data['old_password']):
+                user.set_password(serializer.validated_data['new_password'])
+                user.save()
+                return Response({"message": "Password changed successfully."}, status=status.HTTP_200_OK)
+            return Response({"error": "Incorrect old password."}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
